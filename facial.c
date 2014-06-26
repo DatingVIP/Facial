@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: krakjoe                                                      |
   +----------------------------------------------------------------------+
 */
 
@@ -98,38 +98,6 @@ PHP_FUNCTION(faces)
 }
 /* }}} */
 
-/* {{{ PHP_MINIT_FUNCTION
- */
-PHP_MINIT_FUNCTION(facial)
-{
-	return SUCCESS;
-}
-/* }}} */
-
-/* {{{ PHP_MSHUTDOWN_FUNCTION
- */
-PHP_MSHUTDOWN_FUNCTION(facial)
-{
-	return SUCCESS;
-}
-/* }}} */
-
-/* Remove if there's nothing to do at request start */
-/* {{{ PHP_RINIT_FUNCTION
- */
-PHP_RINIT_FUNCTION(facial)
-{
-	return SUCCESS;
-}
-/* }}} */
-
-/* Remove if there's nothing to do at request end */
-/* {{{ PHP_RSHUTDOWN_FUNCTION
- */
-PHP_RSHUTDOWN_FUNCTION(facial)
-{
-	return SUCCESS;
-}
 /* }}} */
 
 /* {{{ PHP_MINFO_FUNCTION
@@ -142,18 +110,18 @@ PHP_MINFO_FUNCTION(facial)
 }
 /* }}} */
 
-ZEND_BEGIN_ARG_INFO_EX(php_arginfo_faces, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(php_arginfo_faces, 0, 0, 4)
+	ZEND_ARG_INFO(0, cascade)
 	ZEND_ARG_INFO(0, image)
-	
+	ZEND_ARG_INFO(0, width)
+	ZEND_ARG_INFO(0, height)
 ZEND_END_ARG_INFO()
 
 /* {{{ facial_functions[]
- *
- * Every user visible function must have an entry in facial_functions[].
  */
 const zend_function_entry facial_functions[] = {
-	PHP_FE(faces,	php_arginfo_faces)		/* For testing, remove later. */
-	PHP_FE_END	/* Must be the last line in facial_functions[] */
+	PHP_FE(faces,	php_arginfo_faces)
+	PHP_FE_END
 };
 /* }}} */
 
@@ -161,12 +129,12 @@ const zend_function_entry facial_functions[] = {
  */
 zend_module_entry facial_module_entry = {
 	STANDARD_MODULE_HEADER,
-	"facial",
+	PHP_FACIAL_EXTNAME,
 	facial_functions,
-	PHP_MINIT(facial),
-	PHP_MSHUTDOWN(facial),
-	PHP_RINIT(facial),		/* Replace with NULL if there's nothing to do at request start */
-	PHP_RSHUTDOWN(facial),	/* Replace with NULL if there's nothing to do at request end */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
 	PHP_MINFO(facial),
 	PHP_FACIAL_VERSION,
 	STANDARD_MODULE_PROPERTIES
