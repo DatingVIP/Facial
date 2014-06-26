@@ -18,7 +18,7 @@ foreach (glob("{$path}/*.jpg") as $image) {
 	
 	$faces   = faces($cascade, $image, $size[0], $size[1]);
 
-	if (!$faces) {
+	if (!$faces) {h
 		printf("[F]: no faces found in %s\n", $image);
 		continue;
 	}
