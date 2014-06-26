@@ -29,7 +29,32 @@
 
 #include <opencv/cv.h>
 
-/* {{{ proto array faces(string cascade, string file, int width, int height)
+static int le_cascade;
+
+/* {{{ proto resource cascade(string filename) */
+PHP_FUNCTION(cascade) 
+{
+	zval *zcascade = NULL;
+	CvHaarClassifierCascade *cascade;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &zcascade) != SUCCESS) {
+		return;
+	}
+
+	if (!zcascade || Z_TYPE_P(zcascade) != IS_STRING) {
+		return;
+	}
+
+	cascade = (CvHaarClassifierCascade*) cvLoad(Z_STRVAL_P(zcascade), 0, 0, 0);
+
+	if (!cascade) {
+		return;
+	}
+	
+	ZEND_REGISTER_RESOURCE(return_value, cascade, le_cascade);	
+} /* }}} */
+
+/* {{{ proto array faces(resource cascade, string file, int width, int height)
    return coordinates of faces found in file */
 PHP_FUNCTION(faces)
 {
@@ -43,7 +68,7 @@ PHP_FUNCTION(faces)
 	CvSeq *faces;
 	int face;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zzll", &zcascade, &zfile, &zwidth, &zheight) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rzll", &zcascade, &zfile, &zwidth, &zheight) == FAILURE) {
 		return;
 	}
 	
@@ -51,11 +76,11 @@ PHP_FUNCTION(faces)
 		return;
 	}
 
-	if (!zcascade || Z_TYPE_P(zcascade) != IS_STRING) {
+	if (!zcascade || Z_TYPE_P(zcascade) != IS_RESOURCE) {
 		return;
 	}
 
-	cascade = (CvHaarClassifierCascade*) cvLoad(Z_STRVAL_P(zcascade), 0, 0, 0 );
+	ZEND_FETCH_RESOURCE(cascade, CvHaarClassifierCascade*, &zcascade, -1, "cascade", le_cascade);
 	
 	if (!cascade) {
 		return;
@@ -98,7 +123,6 @@ PHP_FUNCTION(faces)
 	
 	cvReleaseImage(&img);
 	cvRelease(&faces);
-	cvRelease(&cascade);
 	cvReleaseMemStorage(&storage);
 }
 /* }}} */
@@ -115,6 +139,10 @@ PHP_MINFO_FUNCTION(facial)
 }
 /* }}} */
 
+ZEND_BEGIN_ARG_INFO_EX(php_arginfo_cascade, 0, 0, 1)
+	ZEND_ARG_INFO(0, cascade)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(php_arginfo_faces, 0, 0, 4)
 	ZEND_ARG_INFO(0, cascade)
 	ZEND_ARG_INFO(0, image)
@@ -125,10 +153,25 @@ ZEND_END_ARG_INFO()
 /* {{{ facial_functions[]
  */
 const zend_function_entry facial_functions[] = {
+	PHP_FE(cascade,	php_arginfo_cascade)
 	PHP_FE(faces,	php_arginfo_faces)
 	PHP_FE_END
 };
 /* }}} */
+
+/* {{{ */
+static void php_facial_cascade_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC) {
+    cvRelease(&rsrc->ptr);
+} /* }}} */
+
+/* {{{ */
+PHP_MINIT_FUNCTION(facial) {
+	
+	le_cascade = zend_register_list_destructors_ex(
+		php_facial_cascade_dtor, NULL, "cascade", module_number);
+
+	return SUCCESS;
+} /* }}} */
 
 /* {{{ facial_module_entry
  */
@@ -136,7 +179,7 @@ zend_module_entry facial_module_entry = {
 	STANDARD_MODULE_HEADER,
 	PHP_FACIAL_EXTNAME,
 	facial_functions,
-	NULL,
+	PHP_MINIT(facial),
 	NULL,
 	NULL,
 	NULL,

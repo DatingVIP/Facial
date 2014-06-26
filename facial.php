@@ -1,5 +1,8 @@
 <?php
-$cascade = "cascades/default.xml";
+$cascade = cascade("cascades/default.xml");
+
+var_dump($cascade);
+
 $image   = "images/sepia.jpg";
 $size    = getimagesize($image);
 
