@@ -95,6 +95,11 @@ PHP_FUNCTION(faces)
 
 		add_next_index_zval(return_value, child);
 	}
+	
+	cvReleaseImage(&img);
+	cvRelease(&faces);
+	cvRelease(&cascade);
+	cvReleaseMemStorage(&storage);
 }
 /* }}} */
 
