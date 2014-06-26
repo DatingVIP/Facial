@@ -1,10 +1,7 @@
 <?php
-$cascade = cascade("cascades/default.xml");
-
-var_dump($cascade);
-
 $image   = "images/sepia.jpg";
 $size    = getimagesize($image);
+$cascade = cascade("cascades/default.xml");
 
 $copy    = imagecreatefromjpeg($image);
 $green   = imagecolorallocate($copy, 132, 135, 28);
