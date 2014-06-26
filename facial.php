@@ -6,7 +6,7 @@
 /** usage: facial.php [path=images] [cascade=cascades/default.xml] **/
 
 $path    = @realpath($argv[1] ?: "images");
-$cascade = @cascade($argv[2] ?: "cascades/default.xml");
+$cascade = @cascade($argv[2]  ?: "cascades/default.xml");
 
 foreach (glob("{$path}/*.jpg") as $image) {
 	if (preg_match("~/face-~", $image)) {
@@ -15,10 +15,20 @@ foreach (glob("{$path}/*.jpg") as $image) {
 	
 	$base    = basename($image);
 	$size    = getimagesize($image);
+	
+	$faces   = faces($cascade, $image, $size[0], $size[1]);
+
+	if (!$faces) {
+		printf("[F]: no faces found in %s\n", $image);
+		continue;
+	}
+
+	printf("[P]: %d faces found in %s\n", count($faces), $image);
+
 	$copy    = imagecreatefromjpeg($image);
 	$green   = imagecolorallocate($copy, 132, 135, 28);
 
-	foreach (faces($cascade, $image, $size[0], $size[1]) as $face) {
+	foreach ($faces as $face) {
 		imagerectangle($copy, 
 			$face["x"],
 			$face["y"],

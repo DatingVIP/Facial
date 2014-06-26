@@ -98,7 +98,7 @@ PHP_FUNCTION(faces)
 		return;
 	}
 	
-	faces = cvHaarDetectObjects(img, cascade, storage, 1.1, 3, 0, cvSize(100,100), cvSize(zwidth, zheight));
+	faces = cvHaarDetectObjects(img, cascade, storage, 1.1, 2, 0, cvSize(60,60), cvSize(zwidth, zheight));
 
 	if (!faces->total) {
 		return;
