@@ -1,6 +1,6 @@
 <?php
 $cascade = "cascades/default.xml";
-$image   = "images/token.jpg";
+$image   = "images/sepia.jpg";
 $size    = getimagesize($image);
 
 $copy    = imagecreatefromjpeg($image);
@@ -15,5 +15,5 @@ foreach (faces($cascade, $image, $size[0], $size[1]) as $face) {
 		$green);
 }
 
-imagejpeg($copy, "images/token-face.jpg");
+imagejpeg($copy, "images/sepia-face.jpg");
 ?>
