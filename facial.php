@@ -5,9 +5,15 @@
 
 /** usage: facial.php [path=images] [cascade=cascades/default.xml] **/
 
-$path    = @realpath($argv[1] ?: "images");
-$cascade = @cascade($argv[2]  ?: "cascades/default.xml");
+use DatingVIP\Facial\Cascade;
+use DatingVIP\Facial\Detector;
+use DatingVIP\Facial\Image;
+
+$path    = realpath(isset($argv[1]) ? $argv[1] : "images");
+$cascade = new Cascade(isset($argv[2])  ? $argv[2] : "cascades/default.xml");
 $draw    = (bool) @$argv[3];
+
+var_dump($cascade);
 
 function find($path) {
 	$files = [];
@@ -31,9 +37,10 @@ foreach (find(realpath($path)) as $image) {
 	}
 	
 	$base    = basename($image);
-	$size    = getimagesize($image);
-	
-	$faces   = faces($cascade, $image, $size[0], $size[1]);
+
+	$img     = new Image($image);
+	$detector  = new Detector($cascade);
+	$faces   = $detector->detect($img);	
 
 	if (!$faces) {
 		$fail++;
