@@ -173,8 +173,7 @@ PHP_METHOD(Detector,  __construct)  {
 	  zend_throw_exception(NULL, "invalid cascade", 0);
 	}
 	
-	pdetector->cascade = *zcascade;
-	Z_ADDREF(pdetector->cascade);
+	ZVAL_COPY(&pdetector->cascade, zcascade);
 	
 	if (zsize) {
 		switch (Z_TYPE_P(zsize)) {
