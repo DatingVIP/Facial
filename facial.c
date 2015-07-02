@@ -71,7 +71,6 @@ static inline void php_facial_detector_free(zend_object *zobject) {
 	
 	zval_dtor(&pdetector->cascade);
 	zend_object_std_dtor(&pdetector->std);
-	//efree(pdetector);
 } /* }}} */
 
 /* {{{ */
@@ -93,7 +92,6 @@ static inline void php_facial_cascade_free(zend_object *zobject) {
 
 	zend_object_std_dtor(&pcascade->std);
 	cvRelease((void**)&pcascade->c);
-	//efree(pcascade);
 } /* }}} */
 
 /* {{{ */
@@ -115,7 +113,6 @@ static inline void php_facial_image_free(zend_object *zobject) {
 
 	zend_object_std_dtor(&pimage->std);
 	cvReleaseImage(&pimage->img);
-	//efree(pimage);
 } /* }}} */
 
 /* {{{ */
