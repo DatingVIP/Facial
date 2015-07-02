@@ -1,8 +1,8 @@
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
+  | PHP Version 7                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2014 The PHP Group                                |
+  | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -48,7 +48,7 @@ typedef struct _php_facial_cascade_t {
 
 /* {{{ */
 typedef struct _php_facial_detector_t {
-	zval                    *cascade;
+	zval                     cascade;
 	CvSize                   min;
 	zend_object              std;
 } php_facial_detector_t; /* }}} */
@@ -69,7 +69,7 @@ typedef struct _php_facial_image_t {
 static inline void php_facial_detector_free(zend_object *zobject) {
 	php_facial_detector_t *pdetector = php_facial_detector_from(zobject);
 	
-	zval_ptr_dtor(pdetector->cascade);
+	zval_dtor(&pdetector->cascade);
 	zend_object_std_dtor(&pdetector->std);
 	efree(pdetector);
 } /* }}} */
@@ -176,8 +176,8 @@ PHP_METHOD(Detector,  __construct)  {
 	  zend_throw_exception(NULL, "invalid cascade", 0);
 	}
 	
-	pdetector->cascade = zcascade;
-	Z_ADDREF_P(pdetector->cascade);
+	pdetector->cascade = *zcascade;
+	Z_ADDREF(pdetector->cascade);
 	
 	if (zsize) {
 		switch (Z_TYPE_P(zsize)) {
@@ -199,10 +199,6 @@ PHP_METHOD(Detector,  __construct)  {
 			}
 		}
 	} else pdetector->min = cvSize(0, 0);
-	
-#if 0
-	php_printf("detector: %p/detector->cascade: %p/cascade: %p\n", pdetector, pdetector->cascade, php_facial_cascade_fetch(pdetector->cascade));
-#endif
 } /* }}} */
 
 /* {{{ proto array Detector::detect(Image image [, array max])
@@ -220,10 +216,6 @@ PHP_METHOD(Detector, detect)
 	CvSeq *faces;
 	CvSize max;
 	int face;
-
-#if 0
-	php_printf("detector: %p/detector->cascade: %p/cascade: %p\n", pdetector, pdetector->cascade, php_facial_cascade_fetch(pdetector->cascade));
-#endif
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|a", &zimage, Image_ce, &zsize) == FAILURE) {
 		return;
@@ -251,8 +243,8 @@ PHP_METHOD(Detector, detect)
 		max = cvSize(Z_LVAL_P(zsizes[0]), Z_LVAL_P(zsizes[1]));
 	} else max = cvSize(pimage->img->width, pimage->img->height);
 
-	pcascade = php_facial_cascade_fetch(pdetector->cascade);
-	
+	pcascade = ((php_facial_cascade_t*) (((char*)Z_OBJ(pdetector->cascade)) - XtOffsetOf(php_facial_cascade_t, std)));
+
 	faces = cvHaarDetectObjects(
 		pimage->img,
 		pcascade->c,
@@ -268,19 +260,18 @@ PHP_METHOD(Detector, detect)
 
 	for (face = 0; face < faces->total; face++) {
 		CvRect *rect = (CvRect*) cvGetSeqElem(faces, face);
-		zval *child;
+		zval child, *member;
 
-		MAKE_STD_ZVAL(child);
-		array_init(child);
+		/*array_init(&child);
 		
-		add_assoc_long(child, "x", rect->x);
-		add_assoc_long(child, "y", rect->y);
-		add_assoc_long(child, "width", rect->width);
-		add_assoc_long(child, "height", rect->height);
+		add_assoc_long(&child, "x", rect->x);
+		add_assoc_long(&child, "y", rect->y);
+		add_assoc_long(&child, "width", rect->width);
+		add_assoc_long(&child, "height", rect->height); */
 
-		add_next_index_zval(return_value, child);
+		add_next_index_zval(return_value, &child);
 	}
-	
+
 	cvRelease((void**)&faces);
 	cvReleaseMemStorage(&storage);
 }
@@ -402,8 +393,13 @@ zend_module_entry facial_module_entry = {
 /* }}} */
 
 #ifdef COMPILE_DL_FACIAL
+#ifdef ZTS
+ZEND_TSRMLS_CACHE_DEFINE();
+#endif
 ZEND_GET_MODULE(facial)
 #endif
+
+
 
 /*
  * Local variables:
