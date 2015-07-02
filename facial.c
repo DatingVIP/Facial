@@ -71,7 +71,7 @@ static inline void php_facial_detector_free(zend_object *zobject) {
 	
 	zval_dtor(&pdetector->cascade);
 	zend_object_std_dtor(&pdetector->std);
-	efree(pdetector);
+	//efree(pdetector);
 } /* }}} */
 
 /* {{{ */
@@ -93,7 +93,7 @@ static inline void php_facial_cascade_free(zend_object *zobject) {
 
 	zend_object_std_dtor(&pcascade->std);
 	cvRelease((void**)&pcascade->c);
-	efree(pcascade);
+	//efree(pcascade);
 } /* }}} */
 
 /* {{{ */
@@ -115,7 +115,7 @@ static inline void php_facial_image_free(zend_object *zobject) {
 
 	zend_object_std_dtor(&pimage->std);
 	cvReleaseImage(&pimage->img);
-	efree(pimage);
+	//efree(pimage);
 } /* }}} */
 
 /* {{{ */
@@ -260,14 +260,14 @@ PHP_METHOD(Detector, detect)
 
 	for (face = 0; face < faces->total; face++) {
 		CvRect *rect = (CvRect*) cvGetSeqElem(faces, face);
-		zval child, *member;
+		zval child;
 
-		/*array_init(&child);
+		array_init(&child);
 		
 		add_assoc_long(&child, "x", rect->x);
 		add_assoc_long(&child, "y", rect->y);
 		add_assoc_long(&child, "width", rect->width);
-		add_assoc_long(&child, "height", rect->height); */
+		add_assoc_long(&child, "height", rect->height);
 
 		add_next_index_zval(return_value, &child);
 	}
