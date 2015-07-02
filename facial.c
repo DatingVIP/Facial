@@ -39,119 +39,96 @@ zend_class_entry *Image_ce;
 
 /* {{{ */
 typedef struct _php_facial_cascade_t {
-	zend_object              std;
-	zend_object_handle       h;
-	CvHaarClassifierCascade  *c;	
+	CvHaarClassifierCascade  *c;
+	zend_object              std;	
 } php_facial_cascade_t; /* }}} */
+
+#define php_facial_cascade_fetch(o) ((php_facial_cascade_t*) (((char*)Z_OBJ_P(o)) - XtOffsetOf(php_facial_cascade_t, std)))
+#define php_facial_cascade_from(o)  (php_facial_cascade_t*)((char*)(o) - XtOffsetOf(php_facial_cascade_t, std))
 
 /* {{{ */
 typedef struct _php_facial_detector_t {
-	zend_object              std;
-	zend_object_handle       h;
-	php_facial_cascade_t    *cascade;
+	zval                    *cascade;
 	CvSize                   min;
+	zend_object              std;
 } php_facial_detector_t; /* }}} */
+
+#define php_facial_detector_fetch(o) ((php_facial_detector_t*) (((char*)Z_OBJ_P(o)) - XtOffsetOf(php_facial_detector_t, std)))
+#define php_facial_detector_from(o)  (php_facial_detector_t*)((char*)(o) - XtOffsetOf(php_facial_detector_t, std))
 
 /* {{{ */
 typedef struct _php_facial_image_t {
-	zend_object              std;
-	zend_object_handle       h;
 	IplImage                *img;	
+	zend_object              std;
 } php_facial_image_t; /* }}} */
 
+#define php_facial_image_fetch(o) ((php_facial_image_t*) (((char*)Z_OBJ_P(o)) - XtOffsetOf(php_facial_image_t, std)))
+#define php_facial_image_from(o)  (php_facial_image_t*)((char*)(o) - XtOffsetOf(php_facial_image_t, std))
+
 /* {{{ */
-static inline void php_facial_destroy(void *zobject, zend_object_handle handle TSRMLS_DC) {
-	zend_objects_destroy_object(zobject, handle TSRMLS_CC);
+static inline void php_facial_detector_free(zend_object *zobject) {
+	php_facial_detector_t *pdetector = php_facial_detector_from(zobject);
+	
+	zval_ptr_dtor(pdetector->cascade);
+	zend_object_std_dtor(&pdetector->std);
+	efree(pdetector);
 } /* }}} */
 
 /* {{{ */
-static inline void php_facial_detector_free(void *zobject TSRMLS_DC) {
-	php_facial_detector_t *pfacial =
-		(php_facial_detector_t *) zobject;
-	zend_object_std_dtor(&pfacial->std TSRMLS_CC);
-	zend_objects_store_del_ref_by_handle(pfacial->cascade->h TSRMLS_CC);
-	efree(pfacial);
-} /* }}} */
-
-/* {{{ */
-static inline zend_object_value php_facial_detector_create(zend_class_entry *ce TSRMLS_DC) {
-	zend_object_value value;
-
-	php_facial_detector_t *pfacial =
+static inline zend_object* php_facial_detector_create(zend_class_entry *ce) {
+	php_facial_detector_t *pdetector =
 		(php_facial_detector_t*) ecalloc(1, sizeof(php_facial_detector_t));
 
-	zend_object_std_init(&pfacial->std, ce TSRMLS_CC);
-	object_properties_init(&pfacial->std, ce);
+	zend_object_std_init(&pdetector->std, ce);
+	object_properties_init(&pdetector->std, ce);
 
-	pfacial->h = zend_objects_store_put(
-		pfacial,
-		php_facial_destroy,
-		php_facial_detector_free, NULL TSRMLS_CC);
+	pdetector->std.handlers = &php_facial_detector_handlers;
 
-	value.handle = pfacial->h;
-	value.handlers = &php_facial_detector_handlers;
-
-	return value;
+	return &pdetector->std;
 } /* }}} */
 
 /* {{{ */
-static inline void php_facial_cascade_free(void *zobject TSRMLS_DC) {
-	php_facial_cascade_t *pcascade =
-		(php_facial_cascade_t *) zobject;
-	zend_object_std_dtor(&pcascade->std TSRMLS_CC);
+static inline void php_facial_cascade_free(zend_object *zobject) {
+	php_facial_cascade_t *pcascade = php_facial_cascade_from(zobject);
+
+	zend_object_std_dtor(&pcascade->std);
 	cvRelease((void**)&pcascade->c);
 	efree(pcascade);
 } /* }}} */
 
 /* {{{ */
-static inline zend_object_value php_facial_cascade_create(zend_class_entry *ce TSRMLS_DC) {
-	zend_object_value value;
-
+static inline zend_object* php_facial_cascade_create(zend_class_entry *ce) {
 	php_facial_cascade_t *pcascade =
-		(php_facial_cascade_t*) ecalloc(1, sizeof(php_facial_detector_t));
+		(php_facial_cascade_t*) ecalloc(1, sizeof(php_facial_cascade_t));
 
-	zend_object_std_init(&pcascade->std, ce TSRMLS_CC);
+	zend_object_std_init(&pcascade->std, ce);
 	object_properties_init(&pcascade->std, ce);
 
-	pcascade->h = zend_objects_store_put(
-		pcascade,
-		php_facial_destroy,
-		php_facial_cascade_free, NULL TSRMLS_CC);
+	pcascade->std.handlers = &php_facial_cascade_handlers;
 
-	value.handle = pcascade->h;
-	value.handlers = &php_facial_cascade_handlers;
-
-	return value;
+	return &pcascade->std;
 } /* }}} */
 
 /* {{{ */
-static inline void php_facial_image_free(void *zobject TSRMLS_DC) {
-	php_facial_image_t *pimage =
-		(php_facial_image_t *) zobject;
-	zend_object_std_dtor(&pimage->std TSRMLS_CC);
+static inline void php_facial_image_free(zend_object *zobject) {
+	php_facial_image_t *pimage = php_facial_image_from(zobject);
+
+	zend_object_std_dtor(&pimage->std);
 	cvReleaseImage(&pimage->img);
 	efree(pimage);
 } /* }}} */
 
 /* {{{ */
-static inline zend_object_value php_facial_image_create(zend_class_entry *ce TSRMLS_DC) {
-	zend_object_value value;
-
+static inline zend_object* php_facial_image_create(zend_class_entry *ce) {
 	php_facial_image_t *pimage =
 		(php_facial_image_t*) ecalloc(1, sizeof(php_facial_image_t));
 
-	zend_object_std_init(&pimage->std, ce TSRMLS_CC);
+	zend_object_std_init(&pimage->std, ce);
 	object_properties_init(&pimage->std, ce);
 
-	pimage->h = zend_objects_store_put(
-		pimage,
-		php_facial_destroy,
-		php_facial_image_free, NULL TSRMLS_CC);
+	pimage->std.handlers = &php_facial_image_handlers;
 
-	value.handle = pimage->h;
-	value.handlers = &php_facial_image_handlers;
-
-	return value;
+	return &pimage->std;
 } /* }}} */
 
 /* {{{ PHP_MINFO_FUNCTION
@@ -167,7 +144,7 @@ PHP_MINFO_FUNCTION(facial)
 /* {{{ proto Cascade::__construct(string file) */
 PHP_METHOD(Cascade, __construct)  {
 	zval *zcascade = NULL;
-	php_facial_cascade_t *pcascade = zend_object_store_get_object(getThis() TSRMLS_CC);
+	php_facial_cascade_t *pcascade = php_facial_cascade_fetch(getThis());
 	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &zcascade) != SUCCESS) {
 		return;
@@ -178,6 +155,10 @@ PHP_METHOD(Cascade, __construct)  {
 	}
 
 	pcascade->c = (CvHaarClassifierCascade*) cvLoad(Z_STRVAL_P(zcascade), 0, 0, 0);
+	
+	if (!CV_IS_HAAR_CLASSIFIER(pcascade->c)) {
+	  zend_throw_exception(NULL, "invalid cascade", 0);
+	}
 } /* }}} */
 
 /* {{{ proto Detector::__construct(Cascade cascade [, array min = [0, 0]])
@@ -185,36 +166,43 @@ PHP_METHOD(Cascade, __construct)  {
 PHP_METHOD(Detector,  __construct)  {
 	zval *zcascade = NULL,
 	     *zsize = NULL;
-	php_facial_detector_t *pfacial = zend_object_store_get_object(getThis() TSRMLS_CC);
-		
+	php_facial_detector_t *pdetector = php_facial_detector_fetch(getThis());
+	
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|z", &zcascade, Cascade_ce, &zsize) != SUCCESS) {
 		return;
 	}
 
-	pfacial->cascade = (php_facial_cascade_t*) zend_object_store_get_object(zcascade TSRMLS_CC);
-
-	zend_objects_store_add_ref_by_handle(pfacial->cascade->h TSRMLS_CC);
+	if (!CV_IS_HAAR_CLASSIFIER(php_facial_cascade_fetch(zcascade)->c)) {
+	  zend_throw_exception(NULL, "invalid cascade", 0);
+	}
+	
+	pdetector->cascade = zcascade;
+	Z_ADDREF_P(pdetector->cascade);
 	
 	if (zsize) {
 		switch (Z_TYPE_P(zsize)) {
-			case IS_LONG: pfacial->min = cvSize(Z_LVAL_P(zsize), Z_LVAL_P(zsize)); break;
+			case IS_LONG: pdetector->min = cvSize(Z_LVAL_P(zsize), Z_LVAL_P(zsize)); break;
 
 			case IS_ARRAY: if (zend_hash_num_elements(Z_ARRVAL_P(zsize)) >= 2) {
-				zval **min[2];
+				zval *min[2];
 
-				zend_hash_index_find(Z_ARRVAL_P(zsize), 0, (void**)&min[0]);
-				zend_hash_index_find(Z_ARRVAL_P(zsize), 1, (void**)&min[1]);
+				min[0] = zend_hash_index_find(Z_ARRVAL_P(zsize), 0);
+				min[1] = zend_hash_index_find(Z_ARRVAL_P(zsize), 1);
 				
-				pfacial->min = cvSize
-					(Z_LVAL_PP(min[0]), Z_LVAL_PP(min[1]));					
+				pdetector->min = cvSize
+					(Z_LVAL_P(min[0]), Z_LVAL_P(min[1]));					
 				break;
 			}
 
 			default: {
-				pfacial->min = cvSize(0, 0);
+				pdetector->min = cvSize(0, 0);
 			}
 		}
-	} else pfacial->min = cvSize(0, 0);
+	} else pdetector->min = cvSize(0, 0);
+	
+#if 0
+	php_printf("detector: %p/detector->cascade: %p/cascade: %p\n", pdetector, pdetector->cascade, php_facial_cascade_fetch(pdetector->cascade));
+#endif
 } /* }}} */
 
 /* {{{ proto array Detector::detect(Image image [, array max])
@@ -224,44 +212,51 @@ PHP_METHOD(Detector, detect)
 {	
 	zval *zimage = NULL,
 	     *zsize = NULL,
-	     **zsizes[2] = {NULL, NULL};
-	php_facial_detector_t *pdetector = zend_object_store_get_object(getThis() TSRMLS_CC);
+	     *zsizes[2] = {NULL, NULL};
+	php_facial_cascade_t  *pcascade = NULL;
+	php_facial_detector_t *pdetector = php_facial_detector_fetch(getThis());
 	php_facial_image_t    *pimage = NULL;
 	CvMemStorage *storage;
 	CvSeq *faces;
 	CvSize max;
 	int face;
 
+#if 0
+	php_printf("detector: %p/detector->cascade: %p/cascade: %p\n", pdetector, pdetector->cascade, php_facial_cascade_fetch(pdetector->cascade));
+#endif
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|a", &zimage, Image_ce, &zsize) == FAILURE) {
 		return;
 	}
-	
-	pimage = zend_object_store_get_object(zimage TSRMLS_CC);	
 		
 	storage = cvCreateMemStorage(0);
 
 	if (!storage) {
 		return;
 	}
+	
+	pimage = php_facial_image_fetch(zimage);
 
 	if (zsize && Z_TYPE_P(zsize) != IS_NULL) {
-		if (zend_hash_index_find(Z_ARRVAL_P(zsize), 0, (void**)&zsizes[0]) != SUCCESS ||
-		    zend_hash_index_find(Z_ARRVAL_P(zsize), 1, (void**)&zsizes[1]) != SUCCESS) {
+		if (!(zsizes[0] = zend_hash_index_find(Z_ARRVAL_P(zsize), 0)) ||
+		    !(zsizes[1] = zend_hash_index_find(Z_ARRVAL_P(zsize), 1))) {
 		    return;
 		}
 
-		if ((!zsizes[0] || Z_TYPE_PP(zsizes[0]) != IS_LONG) ||
-		    (!zsizes[1] || Z_TYPE_PP(zsizes[1]) != IS_LONG)) {
+		if ((!zsizes[0] || Z_TYPE_P(zsizes[0]) != IS_LONG) ||
+		    (!zsizes[1] || Z_TYPE_P(zsizes[1]) != IS_LONG)) {
 		    return;
 		}
 
-		max = cvSize(Z_LVAL_PP(zsizes[0]), Z_LVAL_PP(zsizes[1]));
+		max = cvSize(Z_LVAL_P(zsizes[0]), Z_LVAL_P(zsizes[1]));
 	} else max = cvSize(pimage->img->width, pimage->img->height);
 
+	pcascade = php_facial_cascade_fetch(pdetector->cascade);
+	
 	faces = cvHaarDetectObjects(
 		pimage->img,
-		pdetector->cascade->c, 
-		storage, 
+		pcascade->c,
+		storage,
 		1.1, 2, 0, 
 		pdetector->min, max);
 
@@ -294,7 +289,7 @@ PHP_METHOD(Detector, detect)
 /* {{{ */
 PHP_METHOD(Image, __construct) {
 	zval *zimage = NULL;
-	php_facial_image_t *pimage = zend_object_store_get_object(getThis() TSRMLS_CC);
+	php_facial_image_t *pimage = php_facial_image_fetch(getThis());
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &zimage) != SUCCESS) {
 		return;
@@ -309,7 +304,7 @@ PHP_METHOD(Image, __construct) {
 
 /* {{{ proto int Image::getWidth(void) */
 PHP_METHOD(Image, getWidth) {
-	php_facial_image_t *pimage = zend_object_store_get_object(getThis() TSRMLS_CC);
+	php_facial_image_t *pimage = php_facial_image_fetch(getThis());
 	
 	if (zend_parse_parameters_none() != SUCCESS) {
 		return;	
@@ -320,7 +315,7 @@ PHP_METHOD(Image, getWidth) {
 
 /* {{{ proto int Image::getHeight(void) */
 PHP_METHOD(Image, getHeight) {
-	php_facial_image_t *pimage = zend_object_store_get_object(getThis() TSRMLS_CC);
+	php_facial_image_t *pimage = php_facial_image_fetch(getThis());
 	
 	if (zend_parse_parameters_none() != SUCCESS) {
 		return;	
@@ -369,15 +364,23 @@ PHP_MINIT_FUNCTION(facial) {
 	memcpy(
 		&php_facial_detector_handlers,
 		zend_get_std_object_handlers(),
-		sizeof(php_facial_detector_handlers));
+		sizeof(zend_object_handlers));
+	php_facial_detector_handlers.free_obj = php_facial_detector_free;
+	php_facial_detector_handlers.offset = XtOffsetOf(php_facial_detector_t, std);
+	
 	memcpy(
 		&php_facial_cascade_handlers,
 		zend_get_std_object_handlers(),
-		sizeof(php_facial_cascade_handlers));
+		sizeof(zend_object_handlers));
+	php_facial_cascade_handlers.free_obj = php_facial_cascade_free;
+	php_facial_cascade_handlers.offset = XtOffsetOf(php_facial_cascade_t, std);
+
 	memcpy(
 		&php_facial_image_handlers,
 		zend_get_std_object_handlers(),
-		sizeof(php_facial_image_handlers));				
+		sizeof(zend_object_handlers));	
+	php_facial_image_handlers.free_obj = php_facial_image_free;
+	php_facial_image_handlers.offset = XtOffsetOf(php_facial_image_t, std);
 
 	return SUCCESS;
 } /* }}} */
